@@ -895,6 +895,17 @@ impl<'a, R: Runtime, M: Manager<R>> WebviewWindowBuilder<'a, R, M> {
     self.webview_builder = self.webview_builder.browser_extensions_enabled(enabled);
     self
   }
+
+  /// Enable or disable composition mode for the WebView..
+  ///
+  ///  ## Platform-specific:
+  ///
+  ///  **Windows**: Only.
+  #[must_use]
+  pub fn composition(mut self, composition: bool) -> Self {
+    self.webview_builder = self.webview_builder.composition(composition);
+    self
+  }
 }
 
 /// A type that wraps a [`Window`] together with a [`Webview`].

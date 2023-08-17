@@ -26,14 +26,13 @@ use crate::{
 use crate::menu::{Menu, MenuEvent};
 #[cfg(all(desktop, feature = "tray-icon"))]
 use crate::tray::{TrayIcon, TrayIconBuilder, TrayIconEvent, TrayIconId};
-use raw_window_handle::HasDisplayHandle;
 use serialize_to_javascript::{default_template, DefaultTemplate, Template};
 use tauri_macros::default_runtime;
 #[cfg(desktop)]
 use tauri_runtime::EventLoopProxy;
 use tauri_runtime::{
   dpi::{PhysicalPosition, PhysicalSize},
-  window::DragDropEvent,
+  window::{DragDropEvent, ElementState, ModifiersState, MouseButton},
   RuntimeInitArgs,
 };
 use tauri_utils::{assets::AssetsIter, PackageInfo};
@@ -102,6 +101,13 @@ pub enum WindowEvent {
   Resized(PhysicalSize<u32>),
   /// The position of the window has changed. Contains the window's new position.
   Moved(PhysicalPosition<i32>),
+  /// An mouse button press has been received.
+  MouseInput {
+    state: ElementState,
+    button: MouseButton,
+    #[deprecated = "Deprecated in favor of WindowEvent::ModifiersChanged"]
+    modifiers: ModifiersState,
+  },
   /// The window has been requested to close.
   #[non_exhaustive]
   CloseRequested {
@@ -159,6 +165,15 @@ impl From<RuntimeWindowEvent> for WindowEvent {
       },
       RuntimeWindowEvent::DragDrop(event) => Self::DragDrop(event),
       RuntimeWindowEvent::ThemeChanged(theme) => Self::ThemeChanged(theme),
+      RuntimeWindowEvent::MouseInput {
+        state,
+        button,
+        modifiers,
+      } => Self::MouseInput {
+        state,
+        button,
+        modifiers,
+      },
     }
   }
 }
@@ -2081,7 +2096,7 @@ fn init_app_menu<R: Runtime>(menu: &Menu<R>) -> crate::Result<()> {
   Ok(())
 }
 
-impl<R: Runtime> HasDisplayHandle for AppHandle<R> {
+impl<R: Runtime> raw_window_handle::HasDisplayHandle for AppHandle<R> {
   fn display_handle(
     &self,
   ) -> std::result::Result<raw_window_handle::DisplayHandle<'_>, raw_window_handle::HandleError> {
@@ -2089,11 +2104,23 @@ impl<R: Runtime> HasDisplayHandle for AppHandle<R> {
   }
 }
 
-impl<R: Runtime> HasDisplayHandle for App<R> {
+impl<R: Runtime> raw_window_handle::HasDisplayHandle for App<R> {
   fn display_handle(
     &self,
   ) -> std::result::Result<raw_window_handle::DisplayHandle<'_>, raw_window_handle::HandleError> {
     self.handle.display_handle()
+  }
+}
+
+unsafe impl<R: Runtime> raw_window_handle5::HasRawDisplayHandle for AppHandle<R> {
+  fn raw_display_handle(&self) -> raw_window_handle5::RawDisplayHandle {
+    self.runtime_handle.raw_display_handle()
+  }
+}
+
+unsafe impl<R: Runtime> raw_window_handle5::HasRawDisplayHandle for App<R> {
+  fn raw_display_handle(&self) -> raw_window_handle5::RawDisplayHandle {
+    self.handle.raw_display_handle()
   }
 }
 

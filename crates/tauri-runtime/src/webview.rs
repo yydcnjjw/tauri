@@ -209,6 +209,7 @@ pub struct WebviewAttributes {
   pub proxy_url: Option<Url>,
   pub zoom_hotkeys_enabled: bool,
   pub browser_extensions_enabled: bool,
+  pub composition: bool,
 }
 
 impl From<&WindowConfig> for WebviewAttributes {
@@ -261,6 +262,7 @@ impl WebviewAttributes {
       proxy_url: None,
       zoom_hotkeys_enabled: false,
       browser_extensions_enabled: false,
+      composition: false,
     }
   }
 
@@ -327,6 +329,12 @@ impl WebviewAttributes {
   #[must_use]
   pub fn incognito(mut self, incognito: bool) -> Self {
     self.incognito = incognito;
+    self
+  }
+
+  #[must_use]
+  pub fn composition(mut self, composition: bool) -> Self {
+    self.composition = composition;
     self
   }
 

@@ -250,6 +250,7 @@ fn on_window_event<R: Runtime>(window: &Window<R>, event: &WindowEvent) -> crate
     WindowEvent::ThemeChanged(theme) => {
       window.emit_to_window(WINDOW_THEME_CHANGED, theme.to_string())?
     }
+    _ => {}
   }
   Ok(())
 }

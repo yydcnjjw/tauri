@@ -15,15 +15,15 @@
 )]
 
 use http::Request;
-use raw_window_handle::{DisplayHandle, HasDisplayHandle, HasWindowHandle};
+use raw_window_handle::HasWindowHandle;
 
 use tauri_runtime::{
   dpi::{LogicalPosition, LogicalSize, PhysicalPosition, PhysicalSize, Position, Size},
   monitor::Monitor,
   webview::{DetachedWebview, DownloadEvent, PendingWebview, WebviewIpcHandler},
   window::{
-    CursorIcon, DetachedWindow, DragDropEvent, PendingWindow, RawWindow, WebviewEvent,
-    WindowBuilder, WindowBuilderBase, WindowEvent, WindowId, WindowSizeConstraints,
+    CursorIcon, DetachedWindow, DragDropEvent, ModifiersState, PendingWindow, RawWindow,
+    WebviewEvent, WindowBuilder, WindowBuilderBase, WindowEvent, WindowId, WindowSizeConstraints,
   },
   DeviceEventFilter, Error, EventLoopProxy, ExitRequestedEventAction, Icon, ProgressBarState,
   ProgressBarStatus, Result, RunEvent, Runtime, RuntimeHandle, RuntimeInitArgs, UserAttentionType,
@@ -55,6 +55,7 @@ use tao::{
     EventLoopProxy as TaoEventLoopProxy, EventLoopWindowTarget,
   },
   monitor::MonitorHandle,
+  rwh_05::HasRawDisplayHandle,
   window::{
     CursorIcon as TaoCursorIcon, Fullscreen, Icon as TaoWindowIcon,
     ProgressBarState as TaoProgressBarState, ProgressState as TaoProgressState, Theme as TaoTheme,
@@ -493,6 +494,26 @@ impl<'a> From<&TaoWindowEvent<'a>> for WindowEventWrapper {
       TaoWindowEvent::Moved(position) => {
         WindowEvent::Moved(PhysicalPositionWrapper(*position).into())
       }
+      TaoWindowEvent::MouseInput {
+        state,
+        button,
+        modifiers,
+        ..
+      } => WindowEvent::MouseInput {
+        state: match state {
+          tao::event::ElementState::Pressed => tauri_runtime::window::ElementState::Pressed,
+          tao::event::ElementState::Released => tauri_runtime::window::ElementState::Released,
+          _ => todo!(),
+        },
+        button: match button {
+          tao::event::MouseButton::Left => tauri_runtime::window::MouseButton::Left,
+          tao::event::MouseButton::Right => tauri_runtime::window::MouseButton::Right,
+          tao::event::MouseButton::Middle => tauri_runtime::window::MouseButton::Middle,
+          tao::event::MouseButton::Other(v) => tauri_runtime::window::MouseButton::Other(*v),
+          _ => todo!(),
+        },
+        modifiers: ModifiersState::from_bits(modifiers.bits()).unwrap(),
+      },
       TaoWindowEvent::Destroyed => WindowEvent::Destroyed,
       TaoWindowEvent::ScaleFactorChanged {
         scale_factor,
@@ -2290,8 +2311,15 @@ impl<T: UserEvent> RuntimeHandle<T> for WryHandle<T> {
     send_user_message(&self.context, Message::Task(Box::new(f)))
   }
 
-  fn display_handle(&self) -> std::result::Result<DisplayHandle, raw_window_handle::HandleError> {
+  fn display_handle(
+    &self,
+  ) -> std::result::Result<tao::rwh_06::DisplayHandle, tao::rwh_06::HandleError> {
+    use tao::rwh_06::HasDisplayHandle;
     self.context.main_thread.window_target.display_handle()
+  }
+
+  fn raw_display_handle(&self) -> tao::rwh_05::RawDisplayHandle {
+    self.context.main_thread.window_target.raw_display_handle()
   }
 
   fn primary_monitor(&self) -> Option<Monitor> {
@@ -4145,6 +4173,8 @@ fn create_webview<T: UserEvent>(
     if let Some(additional_browser_args) = webview_attributes.additional_browser_args {
       webview_builder = webview_builder.with_additional_browser_args(&additional_browser_args);
     }
+
+    webview_builder = webview_builder.with_composition(webview_attributes.composition);
 
     webview_builder = webview_builder.with_theme(match window.theme() {
       TaoTheme::Dark => wry::Theme::Dark,

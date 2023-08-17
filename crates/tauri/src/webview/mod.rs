@@ -228,7 +228,7 @@ macro_rules! unstable_struct {
 }
 
 unstable_struct!(
-  #[doc = "A builder for a webview."]
+  ///A builder for a webview.
   struct WebviewBuilder<R: Runtime> {
     pub(crate) label: String,
     pub(crate) webview_attributes: WebviewAttributes,
@@ -785,6 +785,12 @@ fn main() {
   #[must_use]
   pub fn browser_extensions_enabled(mut self, enabled: bool) -> Self {
     self.webview_attributes.browser_extensions_enabled = enabled;
+    self
+  }
+
+  #[must_use]
+  pub fn composition(mut self, composition: bool) -> Self {
+    self.webview_attributes.composition = composition;
     self
   }
 }

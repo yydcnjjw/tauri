@@ -304,6 +304,7 @@ pub trait RuntimeHandle<T: UserEvent>: Debug + Clone + Send + Sync + Sized + 'st
   fn run_on_main_thread<F: FnOnce() + Send + 'static>(&self, f: F) -> Result<()>;
 
   fn display_handle(&self) -> std::result::Result<DisplayHandle, raw_window_handle::HandleError>;
+  fn raw_display_handle(&self) -> raw_window_handle5::RawDisplayHandle;
 
   fn primary_monitor(&self) -> Option<Monitor>;
   fn monitor_from_point(&self, x: f64, y: f64) -> Option<Monitor>;
